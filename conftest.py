@@ -8,5 +8,3 @@ mock_boto3 = MagicMock()
 mock_boto3.client.return_value = mock_s3_client
 
 sys.modules["boto3"] = mock_boto3
-
-sys.modules["prometheus_client"] = MagicMock()
