@@ -206,7 +206,7 @@ class BertWrapper(mlflow.pyfunc.PythonModel):
         inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=128).to(self.device)
         with torch.no_grad():
             probs = F.softmax(self.model(**inputs).logits, dim=-1).cpu().numpy()
-        return [{label: p for label, p in zip(self.labels, prob)} for prob in probs]
+        return [{label: p for label, p in zip(self.labels, prob, strict=False)} for prob in probs]
 
 # COMMAND ----------
 

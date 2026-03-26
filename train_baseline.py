@@ -94,7 +94,7 @@ class SKLearnWrapper(mlflow.pyfunc.PythonModel):
     def predict(self, context, model_input):
         text = self.preprocessor.transform(model_input["comment"].tolist())
         probs = self.model.predict_proba(text)
-        return [{label: p for label, p in zip(self.labels, prob)} for prob in probs]
+        return [{label: p for label, p in zip(self.labels, prob, strict=False)} for prob in probs]
 
 # COMMAND ----------
 

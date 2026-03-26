@@ -13,9 +13,11 @@ exclude = [
 select = ["E", "F", "W", "I", "B"]
 
 ignore = [
-    "E501",   # line too long — handled by formatter
-    "B008",   # do not perform function call in default args (common in Flask)
-    "F401",   # imported but unused — too noisy for notebook-converted scripts
+    "E501",   # line too long
+    "B008",   # do not perform function call in default args
+    "F401",   # imported but unused
+    "F821",   # Undefined name `spark`for notebooks
+    "E402",   # Module level import not at top of file
 ]
 
 [tool.pytest.ini_options]
