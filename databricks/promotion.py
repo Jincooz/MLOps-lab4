@@ -14,6 +14,8 @@ SCHEMA_NAME = "default"
 ACCURACY_THRESHOLD = 0.05
 
 client = MlflowClient()
+print("SECTER")
+
 # COMMAND ----------
 
 def get_accuracy(model_version):
