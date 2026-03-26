@@ -1,16 +1,12 @@
 import sys
-import types
 from unittest.mock import MagicMock
 
-try:
-    import boto3
-except ModuleNotFoundError:
-    fake_boto3 = types.SimpleNamespace()
+mock_s3_client = MagicMock()
+mock_s3_client.put_object.return_value = {"ResponseMetadata": {"HTTPStatusCode": 200}}
 
-    def fake_client(*args, **kwargs):
-        raise RuntimeError("boto3 is not installed (mocked in tests)")
+mock_boto3 = MagicMock()
+mock_boto3.client.return_value = mock_s3_client
 
-    fake_boto3.client = fake_client
-    sys.modules["boto3"] = fake_boto3
+sys.modules["boto3"] = mock_boto3
 
 sys.modules["prometheus_client"] = MagicMock()
