@@ -2,7 +2,7 @@ name: CD — Build & Push Docker Images
 
 on:
   push:
-    branches: [main]
+    branches: [tesattt]
 
 env:
   REGISTRY: ghcr.io
@@ -46,7 +46,7 @@ jobs:
             type=sha,prefix=sha-
 
       - name: Create .env file
-        run: echo "${{ secrets.ENV_FILE }}" > api_service/.env
+        run: echo "${{ secrets.ENV_FILE }}" > .env
 
       - name: Build and push api_service
         uses: docker/build-push-action@v5

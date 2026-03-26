@@ -1,0 +1,43 @@
+name: Pipeline — Trigger Databricks Training
+ 
+on:
+  push:
+    branches: [main]
+    paths:
+      - "prepare_data.py"
+      - "train_baseline.py"
+      - "train_improved.py"
+      - "promotion.py"
+      - "preprocessing.py"
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual trigger"
+        required: false
+        default: "Manual run"
+ 
+jobs:
+  trigger-databricks-pipeline:
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+ 
+      - name: Install Databricks CLI
+        run: pip install databricks-cli
+ 
+      - name: Configure Databricks CLI
+        run: |
+          databricks configure --token <<EOF
+          ${{ secrets.DATABRICKS_HOST }}
+          ${{ secrets.DATABRICKS_TOKEN }}
+          EOF
+ 
+      - name: Trigger Databricks Job
+        run: |
+          echo "Triggering Databricks Job ID: ${{ secrets.DATABRICKS_JOB_ID }}"
+          RUN=$(databricks jobs run-now --job-id ${{ secrets.DATABRICKS_JOB_ID }})
+          echo "Job triggered: $RUN"
