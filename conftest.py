@@ -1,9 +1,9 @@
 import sys
-from unittest.mock import MagicMock
 import types
+from unittest.mock import MagicMock
 
 try:
-    import boto3 
+    import boto3
 except ModuleNotFoundError:
     fake_boto3 = types.SimpleNamespace()
 
