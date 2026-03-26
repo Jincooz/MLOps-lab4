@@ -17,7 +17,6 @@ df = spark.read.table(f"{CATALOG_NAME}.{SCHEMA_NAME}.data").toPandas()
 
 df["processed_tweet"] = TextPreprocessor().transform(df["tweet"])
 
-raise KeyError()
 
 display(df)
 
