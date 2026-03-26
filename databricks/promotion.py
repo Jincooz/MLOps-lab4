@@ -14,6 +14,7 @@ SCHEMA_NAME = "default"
 ACCURACY_THRESHOLD = 0.05
 
 client = MlflowClient()
+print("SECTER")
 
 # COMMAND ----------
 
