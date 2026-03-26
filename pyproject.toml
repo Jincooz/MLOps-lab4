@@ -1,0 +1,26 @@
+include = ["*.py"]
+
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "*.ipynb",
+]
+
+[tool.ruff.lint]
+# Enable: pyflakes (F), pycodestyle (E/W), isort (I), bugbear (B)
+select = ["E", "F", "W", "I", "B"]
+
+ignore = [
+    "E501",   # line too long — handled by formatter
+    "B008",   # do not perform function call in default args (common in Flask)
+    "F401",   # imported but unused — too noisy for notebook-converted scripts
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

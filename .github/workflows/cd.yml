@@ -1,0 +1,75 @@
+name: CD — Build & Push Docker Images
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_API: ghcr.io/${{ github.repository }}/api_service
+  IMAGE_EVIDENTLY: ghcr.io/${{ github.repository }}/api_evidently
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for api_service
+        id: meta_api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_API }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-
+
+      - name: Extract metadata for api_evidently
+        id: meta_evidently
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_EVIDENTLY }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-
+
+      - name: Create .env file
+        run: echo "${{ secrets.ENV_FILE }}" > api_service/.env
+
+      - name: Build and push api_service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api_service
+          push: true
+          tags: ${{ steps.meta_api.outputs.tags }}
+          labels: ${{ steps.meta_api.outputs.labels }}
+
+      - name: Build and push api_evidently
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api_evidently
+          push: true
+          tags: ${{ steps.meta_evidently.outputs.tags }}
+          labels: ${{ steps.meta_evidently.outputs.labels }}
+
+      - name: Print image URLs
+        run: |
+          echo "service pushed:"
+          echo "${{ env.IMAGE_API }}:latest"
+          echo "${{ env.IMAGE_API }}:sha-${{ github.sha }}"
+          echo ""
+          echo "api_evidently pushed:"
+          echo "${{ env.IMAGE_EVIDENTLY }}:latest"
+          echo "${{ env.IMAGE_EVIDENTLY }}:sha-${{ github.sha }}"

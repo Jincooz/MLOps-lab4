@@ -1,8 +1,8 @@
 # Databricks notebook source
 import mlflow
-from mlflow.tracking import MlflowClient
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.serving import ServedModelInput
+from mlflow.tracking import MlflowClient
 
 # COMMAND ----------
 
@@ -61,12 +61,12 @@ def main():
     if not challengers:
         print("No challengers found in stage.")
         return
-    
+
     if champion_version is None:
         champ_acc = -1
     else:
         champ_acc = get_accuracy(champion_version)
-    
+
     best_challenger = None
     best_challenger_acc = -1
     for c in challengers:
@@ -74,7 +74,7 @@ def main():
         if acc > best_challenger_acc:
             best_challenger_acc = acc
             best_challenger = c
-    
+
     if (1 - champ_acc) * (1-ACCURACY_THRESHOLD) > (1 - best_challenger_acc):
         if champion_version:
             client.set_model_version_tag(REGISTERED_MODEL_NAME, champion_version.version, "candidate_type", "depr")
@@ -87,7 +87,7 @@ def main():
             if c.version != best_challenger.version:
                 client.set_model_version_tag(REGISTERED_MODEL_NAME, c.version, "environment", "depr")
                 client.set_model_version_tag(REGISTERED_MODEL_NAME, c.version, "candidate_type", "depr")
-        
+
         update_endpoint(best_challenger.version)
     else:
         print("No new champion found.")

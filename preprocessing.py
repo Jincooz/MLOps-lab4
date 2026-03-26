@@ -1,6 +1,5 @@
-import string
-
 import re
+
 USER_RE = re.compile(r"@\w+") # mentions
 LINK_RE = re.compile(r"http\S+") # URLs
 HTML_ENTITY_RE = re.compile(r"&#\w+;|&\w+;") # html tags

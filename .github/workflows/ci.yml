@@ -1,0 +1,46 @@
+name: CI — Lint, Test, Validate
+ 
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+ 
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+ 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+ 
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+ 
+      - name: Lint with ruff
+        run: ruff check . --output-format=github
+ 
+      - name: Run unit tests
+        run: pytest tests/ -v --tb=short
+ 
+  validate-docker-compose:
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+ 
+      - name: Validate docker-compose config
+        run: docker compose -f docker-compose.yml config --quiet
+ 
+      - name: Build api_service image
+        run: docker build -t api_service:test ./api_service
+ 
+      - name: Build api_evidently image
+        run: docker build -t api_evidently:test ./api_evidently

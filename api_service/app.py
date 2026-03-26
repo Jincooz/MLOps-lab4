@@ -1,17 +1,16 @@
-from flask import Flask, jsonify, request
-from flask.views import MethodView
-from flask_smorest import Api, Blueprint, abort
-from flask import Response, g, request
-from marshmallow import Schema, fields, validate, INCLUDE
-import requests
+import json
 import logging
 import os
-import boto3
 import time
-import json
 
-from metrics import REQUEST_LATENCY, REQUESTS_TOTAL, REQUEST_ERRORS, NODE_UP
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+import boto3
+import requests
+from flask import Flask, Response, g, jsonify, request
+from flask.views import MethodView
+from flask_smorest import Api, Blueprint, abort
+from marshmallow import INCLUDE, Schema, fields, validate
+from metrics import NODE_UP, REQUEST_ERRORS, REQUEST_LATENCY, REQUESTS_TOTAL
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 logging.basicConfig(level=logging.INFO)
 
@@ -48,14 +47,14 @@ class PseudoQueue:
         self.bucket = bucket
         self.file_path = file_path
         self.max_size = max_size
-    
+
     def append(self, new_value):
         value = dict(new_value)
         value["created_at"] = time.time()
         self.array.append(value)
         if len(self.array) >= self.max_size:
             self.flush_to_s3()
-    
+
     def flush_to_s3(self):
         logging.info("Flushing queue into storage")
         json_bytes = json.dumps(self.array).encode("utf-8")
@@ -86,7 +85,7 @@ def before_request():
 @app.after_request
 def after_request(response):
     duration = time.time() - g.start_time
-    
+
     REQUEST_LATENCY.labels(
         "coordinator",
         request.endpoint or "unknown",
@@ -151,7 +150,7 @@ private_blp = Blueprint(
     url_prefix="/internal",
     description="Private api operations"
 )
-    
+
 @private_blp.route("health")
 class HealethResource(MethodView):
     @private_blp.response(200)
@@ -161,7 +160,7 @@ class HealethResource(MethodView):
             "status": "healthy",
         }
         return responce
-    
+
 @private_blp.route("metrics")
 class MetricsAPI(MethodView):
     @private_blp.response(200)
@@ -170,9 +169,9 @@ class MetricsAPI(MethodView):
             generate_latest(),
             mimetype=CONTENT_TYPE_LATEST
         )
-    
+
 api.register_blueprint(private_blp)
-           
+
 if __name__ == "__main__":
     NODE_UP.labels("coordinator", None).set(1)
     app.run(debug=True, host = HOST, port = PORT)

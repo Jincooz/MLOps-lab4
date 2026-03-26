@@ -1,20 +1,14 @@
-from evidently import DataDefinition
-from evidently import Dataset
-from evidently import Report
-from evidently.presets import DataDriftPreset, DataSummaryPreset
-
-import boto3
-
+import json
 import os
 
-import pandas as pd
-import json
+import boto3
 import numpy as np
-
-from flask import Flask, jsonify, request
+import pandas as pd
+from evidently import DataDefinition, Dataset, Report
+from evidently.presets import DataDriftPreset, DataSummaryPreset
+from flask import Flask, Response, g, jsonify, request
 from flask.views import MethodView
 from flask_smorest import Api, Blueprint, abort
-from flask import Response, g, request
 
 STORAGE_URL = os.environ.get("STORAGE_URL", "http://localhost:9000")
 DATA_BUCKET = os.environ.get("DATA_BUCKET", "op-store")
@@ -49,7 +43,7 @@ class DriftMonitor:
             reference_data = pd.read_csv(obj["Body"])
             self._reference = reference_data[["tweet", "class"]]
         return self._reference
-    
+
     def _load_recent_logs(self):
         keys = self.s3.list_objects_v2(
             Bucket=self.inf_bucket, Prefix=self.log_prefix
@@ -62,7 +56,7 @@ class DriftMonitor:
         inference_data["tweet"] = inference_data["text"]
         inference_data["class"] = np.nan
         return inference_data[["tweet", "class"]]
-    
+
     def _save_recent_report(self, report_html):
         s3.put_object(
             Bucket=self.inf_bucket,
@@ -141,10 +135,10 @@ class ModelUsageResource(MethodView):
     def post(self):
         html = drift_monitor.run_report()
         return Response(html, mimetype="text/html")
-    
+
     @public_blp.response(200)
     def get(self):
-        html = drift_monitor.load_recent_report()        
+        html = drift_monitor.load_recent_report()
         return Response(html, mimetype="text/html")
 
 api.register_blueprint(public_blp)

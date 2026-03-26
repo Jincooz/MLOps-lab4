@@ -3,20 +3,21 @@
 
 # COMMAND ----------
 
+import logging
+
+import mlflow
+import mlflow.sklearn
 import numpy as np
 import pandas as pd
-
 import torch
-from torch.utils.data import Dataset, DataLoader
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from sklearn.metrics import balanced_accuracy_score, f1_score, recall_score
 from torch.optim import AdamW
-from transformers import get_scheduler
-
-from sklearn.metrics import balanced_accuracy_score, recall_score, f1_score
-
-import mlflow 
-import mlflow.sklearn
-import logging
+from torch.utils.data import DataLoader, Dataset
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    get_scheduler,
+)
 
 # COMMAND ----------
 
@@ -38,7 +39,7 @@ EPOCHS = 10
 LR = 2e-5
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-confidence_threshold = 0.6 
+confidence_threshold = 0.6
 
 PREDICTION_MAP = ["hate speech", "offensive language", "neither"]
 
@@ -83,8 +84,8 @@ val_df = spark.read.table(val_table).toPandas()
 
 # COMMAND ----------
 
-from torch.utils.data import WeightedRandomSampler
 from sklearn.utils.class_weight import compute_class_weight
+from torch.utils.data import WeightedRandomSampler
 
 class_weights = compute_class_weight(
     class_weight="balanced",
@@ -149,8 +150,8 @@ def evaluate(model, loader):
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 
-    low_conf_mask = F.softmax(outputs.logits, dim=-1).cpu().numpy().max(axis=1) < confidence_threshold 
-    low_conf_count = low_conf_mask.sum() 
+    low_conf_mask = F.softmax(outputs.logits, dim=-1).cpu().numpy().max(axis=1) < confidence_threshold
+    low_conf_count = low_conf_mask.sum()
     low_conf_ratio = low_conf_count / len(all_labels)
 
     y_val_bin = np.where(np.array(all_labels) == 2, 1, 0)
@@ -166,7 +167,7 @@ def evaluate(model, loader):
 # COMMAND ----------
 
 from mlflow.models.signature import ModelSignature
-from mlflow.types.schema import Schema, ColSpec
+from mlflow.types.schema import ColSpec, Schema
 
 input_schema = Schema([ColSpec("string", "comment")])
 
@@ -180,16 +181,17 @@ signature = ModelSignature(inputs=input_schema, outputs=output_schema)
 
 # COMMAND ----------
 
-import sys
 import os
+import sys
+
 
 class BertWrapper(mlflow.pyfunc.PythonModel):
     def load_context(self, context):
         import torch
-        from transformers import AutoTokenizer, AutoModelForSequenceClassification
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
         sys.path.insert(0, os.path.dirname(context.artifacts["preprocessor"]))
         from preprocessing import TextPreprocessor
-        
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = AutoTokenizer.from_pretrained(context.artifacts["tokenizer"])
         self.model = mlflow.pytorch.load_model(context.artifacts["model"])
@@ -216,10 +218,10 @@ with mlflow.start_run(run_name="bert_tiny") as run:
     mlflow.set_tag("environment","stage")
     mlflow.set_tag("framework","pytorch")
     mlflow.set_tag("problem", "Hate Speech and Offensive Language Dataset")
-    
+
     history = spark.sql(f"DESCRIBE HISTORY {CATALOG_NAME}.{SCHEMA_NAME}.data")
     latest_version = history.first()["version"]
-    
+
     mlflow.log_params({
         "model_name": MODEL_NAME,
         "max_len": MAX_LEN,
@@ -250,7 +252,7 @@ with mlflow.start_run(run_name="bert_tiny") as run:
         }, step=epoch)
 
         print(f"Epoch {epoch+1}/{EPOCHS} — loss: {train_loss:.4f} — val_f1: {f1_score_val:.4f} - accuracy {accuracy} - recall {recall} - low_conf_ratio {low_conf_ratio}")
-    
+
 
     tokenizer.save_pretrained("/tmp/tokenizer")
     mlflow.pytorch.save_model(model, "/tmp/bert_model")

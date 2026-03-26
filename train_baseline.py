@@ -1,20 +1,16 @@
 # Databricks notebook source
+import logging
+import pickle
+
+import mlflow
+import mlflow.sklearn
 import numpy as np
 import pandas as pd
-
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.pipeline import Pipeline 
-from sklearn.feature_extraction.text import TfidfVectorizer 
-from sklearn.svm import LinearSVC 
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.metrics import balanced_accuracy_score, recall_score, f1_score
-
-import mlflow 
-import mlflow.sklearn 
-
-import logging
-
-import pickle
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import balanced_accuracy_score, f1_score, recall_score
+from sklearn.pipeline import Pipeline
+from sklearn.svm import LinearSVC
 
 # COMMAND ----------
 
@@ -67,7 +63,7 @@ CCCV_params = {
 # COMMAND ----------
 
 from mlflow.models.signature import ModelSignature
-from mlflow.types.schema import Schema, ColSpec
+from mlflow.types.schema import ColSpec, Schema
 
 input_schema = Schema([ColSpec("string", "comment")])
 
@@ -81,8 +77,9 @@ signature = ModelSignature(inputs=input_schema, outputs=output_schema)
 
 # COMMAND ----------
 
-import sys
 import os
+import sys
+
 
 class SKLearnWrapper(mlflow.pyfunc.PythonModel):
     def load_context(self, context):
@@ -105,11 +102,11 @@ mlflow.set_experiment(EXPERIMENT_NAME)
 with mlflow.start_run(run_name="tfidf_svm") as run:
     mlflow.log_params(tfidf_params | linearsvc_params | CCCV_params)
 
-    pipeline = Pipeline([ 
-        ("tfidf", TfidfVectorizer(**tfidf_params)), 
+    pipeline = Pipeline([
+        ("tfidf", TfidfVectorizer(**tfidf_params)),
         ("svm", CalibratedClassifierCV(
             estimator=LinearSVC(**linearsvc_params), **CCCV_params)) ])
-    
+
     pipeline.fit(X_train, y_train)
 
     y_pred_proba = pipeline.predict_proba(X_val)
@@ -119,9 +116,9 @@ with mlflow.start_run(run_name="tfidf_svm") as run:
     mlflow.log_metric("accuracy", accuracy)
     logging.info(f"Accuracy: {accuracy}")
 
-    confidence_threshold = 0.6 
-    low_conf_mask = y_pred_proba.max(axis=1) < confidence_threshold 
-    low_conf_count = low_conf_mask.sum() 
+    confidence_threshold = 0.6
+    low_conf_mask = y_pred_proba.max(axis=1) < confidence_threshold
+    low_conf_count = low_conf_mask.sum()
     low_conf_ratio = low_conf_count / len(y_val)
     mlflow.log_metric("low_conf_ratio", low_conf_ratio)
     logging.info(f"low_conf_ratio: {low_conf_ratio}")
@@ -147,7 +144,7 @@ with mlflow.start_run(run_name="tfidf_svm") as run:
 
     with open("/tmp/sklearn_model.pkl", "wb") as file:
         pickle.dump(pipeline, file)
-    
+
     artifacts = {"model": "/tmp/sklearn_model.pkl",
                  "preprocessor": "./preprocessing.py"}
 
@@ -159,9 +156,9 @@ with mlflow.start_run(run_name="tfidf_svm") as run:
         registered_model_name=MODEL_NAME,
         input_example=pd.DataFrame({"comment": [""]})
     )
-    
+
     history = spark.sql(f"DESCRIBE HISTORY {CATALOG_NAME}.{SCHEMA_NAME}.data")
     latest_version = history.first()["version"]
-    
+
     mlflow.log_param("source_table", f"{CATALOG_NAME}.{SCHEMA_NAME}.data")
     mlflow.log_param("source_table_version", latest_version)
