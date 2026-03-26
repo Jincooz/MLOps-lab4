@@ -4,11 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "prepare_data.py"
-      - "train_baseline.py"
-      - "train_improved.py"
-      - "promotion.py"
-      - "preprocessing.py"
+      - "databricks/"
   workflow_dispatch:
     inputs:
       reason:
